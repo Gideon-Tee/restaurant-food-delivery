@@ -1,8 +1,8 @@
+import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
-import os
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -21,7 +21,13 @@ def create_app(test_config=None):
         )
     else:
         # Load the test config if passed in
-        app.config.update(test_config)
+        app.config.from_mapping(
+            TESTING=True,
+            SECRET_KEY='test',
+            SQLALCHEMY_DATABASE_URI='sqlite:///:memory:',
+            SQLALCHEMY_TRACK_MODIFICATIONS=False,
+            JWT_SECRET_KEY='test-secret-key'
+        )
     
     # Initialize extensions
     db.init_app(app)

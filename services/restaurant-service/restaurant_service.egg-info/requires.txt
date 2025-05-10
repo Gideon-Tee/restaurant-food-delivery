@@ -1,10 +1,11 @@
-flask==3.0.2
-flask-sqlalchemy==3.1.1
 flask-jwt-extended==4.6.0
 flask-migrate==4.0.5
+flask-sqlalchemy==3.1.1
+flask==3.0.2
+gunicorn==21.2.0
 psycopg2-binary==2.9.9
 python-dotenv==1.0.1
-gunicorn==21.2.0
-pytest==8.0.2
+
+[test]
 pytest-cov==4.1.0
-marshmallow==3.20.2
+pytest==8.0.2

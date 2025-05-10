@@ -1,5 +1,7 @@
 import json
 from app.models import Restaurant, MenuItem
+from app import db
+from flask_jwt_extended import create_access_token
 
 def test_create_restaurant(client, auth_headers):
     data = {
@@ -9,7 +11,8 @@ def test_create_restaurant(client, auth_headers):
         'phone_number': '9876543210',
         'email': 'new@restaurant.com',
         'cuisine_type': 'Mexican',
-        'opening_hours': '{"monday": "10:00-22:00"}'
+        'opening_hours': '{"monday": "10:00-22:00"}',
+        'is_active': True
     }
     
     response = client.post(
@@ -19,6 +22,8 @@ def test_create_restaurant(client, auth_headers):
         headers=auth_headers
     )
     
+    if response.status_code != 201:
+        print(f"Create restaurant error response: {response.get_data(as_text=True)}")
     assert response.status_code == 201
     assert response.json['name'] == 'New Restaurant'
     assert response.json['email'] == 'new@restaurant.com'
@@ -38,7 +43,10 @@ def test_get_restaurant(client, sample_restaurant):
 def test_update_restaurant(client, sample_restaurant, auth_headers):
     data = {
         'name': 'Updated Restaurant',
-        'description': 'Updated description'
+        'description': 'Updated description',
+        'address': sample_restaurant.address,  # Required field
+        'phone_number': sample_restaurant.phone_number,  # Required field
+        'email': sample_restaurant.email  # Required field
     }
     
     response = client.put(
@@ -48,6 +56,8 @@ def test_update_restaurant(client, sample_restaurant, auth_headers):
         headers=auth_headers
     )
     
+    if response.status_code != 200:
+        print(f"Update restaurant error response: {response.get_data(as_text=True)}")
     assert response.status_code == 200
     assert response.json['name'] == 'Updated Restaurant'
     assert response.json['description'] == 'Updated description'
@@ -57,7 +67,8 @@ def test_create_menu_item(client, sample_restaurant, auth_headers):
         'name': 'New Menu Item',
         'description': 'A new menu item',
         'price': 12.99,
-        'category': 'Appetizer'
+        'category': 'Appetizer',
+        'is_available': True
     }
     
     response = client.post(
@@ -67,6 +78,8 @@ def test_create_menu_item(client, sample_restaurant, auth_headers):
         headers=auth_headers
     )
     
+    if response.status_code != 201:
+        print(f"Create menu item error response: {response.get_data(as_text=True)}")
     assert response.status_code == 201
     assert response.json['name'] == 'New Menu Item'
     assert response.json['price'] == 12.99
@@ -96,7 +109,13 @@ def test_unauthorized_restaurant_update(client, sample_restaurant, auth_headers)
     db.session.add(restaurant)
     db.session.commit()
     
-    data = {'name': 'Unauthorized Update'}
+    data = {
+        'name': 'Unauthorized Update',
+        'address': restaurant.address,  # Required field
+        'phone_number': restaurant.phone_number,  # Required field
+        'email': restaurant.email  # Required field
+    }
+    
     response = client.put(
         f'/api/restaurants/{restaurant.id}',
         data=json.dumps(data),
@@ -104,4 +123,6 @@ def test_unauthorized_restaurant_update(client, sample_restaurant, auth_headers)
         headers=auth_headers
     )
     
+    if response.status_code != 403:
+        print(f"Unauthorized update error response: {response.get_data(as_text=True)}")
     assert response.status_code == 403 
