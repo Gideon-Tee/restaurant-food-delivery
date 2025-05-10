@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    
+    environment {
+        AWS_ACCOUNT_ID = credentials('AWS_ACCOUNT_ID')
+        AWS_REGION = 'us-east-1'
+        ECR_REPOSITORY = 'user-service'
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+    }
+    
+    stages {
+        stage('Test') {
+            steps {
+                sh '''
+                    python -m venv venv
+                    . venv/bin/activate
+                    pip install -r requirements.txt
+                    pytest
+                '''
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                sh '''
+                    docker build -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+                    docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}
+                '''
+            }
+        }
+        
+        stage('Push') {
+            steps {
+                sh '''
+                    aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
+                    docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}
+                '''
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                sh '''
+                    aws ecs update-service --cluster food-delivery-cluster --service user-service --force-new-deployment
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+    }
+} 

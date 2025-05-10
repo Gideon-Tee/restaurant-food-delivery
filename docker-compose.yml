@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  user-service:
+    build: 
+      context: ./services/user-service
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5000"
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@user-db:5432/user_db
+    depends_on:
+      - user-db
+    networks:
+      - app-network
+
+  user-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=user_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  user-db-data: 

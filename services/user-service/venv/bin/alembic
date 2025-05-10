@@ -1,0 +1,10 @@
+#!/bin/sh
+'''exec' "/home/gideon/Desktop/PHASE 2/CAPSTONE/microservices-app/services/user-service/venv/bin/python3" "$0" "$@"
+' '''
+# -*- coding: utf-8 -*-
+import re
+import sys
+from alembic.config import main
+if __name__ == '__main__':
+    sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
+    sys.exit(main())
