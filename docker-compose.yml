@@ -67,9 +67,45 @@ services:
     networks:
       - app-network
 
+  order-service:
+    build: ./services/order-service
+    ports:
+      - "5003:5000"
+    environment:
+      - FLASK_APP=app
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@order-db:5432/order_db
+      - JWT_SECRET_KEY=your-secret-key
+      - USER_SERVICE_URL=http://user-service:5000
+      - RESTAURANT_SERVICE_URL=http://restaurant-service:5000
+    depends_on:
+      order-db:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  order-db:
+    image: postgres:13
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=order_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - order-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
 volumes:
   user-db-data:
   restaurant-db-data:
+  order-db-data:
 
 networks:
   app-network:
