@@ -3,6 +3,7 @@
 ## Base URLs
 - User Service: `http://localhost:5001/api`
 - Restaurant Service: `http://localhost:5002/api`
+- Order Service: `http://localhost:5003/api`
 
 ## Authentication
 All protected endpoints require a JWT token in the Authorization header:
@@ -362,4 +363,229 @@ curl -X POST http://localhost:5002/api/restaurants/1/menu \
     "category": "Pizza",
     "is_available": true
   }'
-``` 
+```
+
+## Order Service API
+
+### Create Order
+```http
+POST /orders
+```
+
+**Headers:**
+- Authorization: Bearer token required
+- Content-Type: application/json; charset=utf-8
+
+**Request Body:**
+```json
+{
+    "restaurant_id": 1,
+    "delivery_address": "123 Main St",
+    "special_instructions": "Optional delivery instructions",
+    "items": [
+        {
+            "menu_item_id": 1,
+            "quantity": 2,
+            "special_instructions": "Extra spicy"
+        },
+        {
+            "menu_item_id": 2,
+            "quantity": 1
+        }
+    ]
+}
+```
+
+**Response (201 Created):**
+```json
+{
+    "id": 1,
+    "customer_id": "1",
+    "restaurant_id": 1,
+    "status": "pending",
+    "total_amount": 25.98,
+    "delivery_address": "123 Main St",
+    "special_instructions": "Optional delivery instructions",
+    "items": [
+        {
+            "id": 1,
+            "menu_item_id": 1,
+            "quantity": 2,
+            "price_at_time": 9.99,
+            "special_instructions": "Extra spicy"
+        },
+        {
+            "id": 2,
+            "menu_item_id": 2,
+            "quantity": 1,
+            "price_at_time": 6.00,
+            "special_instructions": null
+        }
+    ],
+    "created_at": "2024-03-14T12:00:00Z",
+    "updated_at": "2024-03-14T12:00:00Z"
+}
+```
+
+### Get All Orders
+```http
+GET /orders
+```
+
+**Headers:**
+- Authorization: Bearer token required
+
+**Query Parameters:**
+- `status` (optional): Filter by order status (pending, confirmed, preparing, ready, delivered, cancelled)
+- `restaurant_id` (optional): Required for restaurant owners to filter orders
+
+**Response (200 OK):**
+```json
+[
+    {
+        "id": 1,
+        "customer_id": "1",
+        "restaurant_id": 1,
+        "status": "pending",
+        "total_amount": 25.98,
+        "delivery_address": "123 Main St",
+        "special_instructions": "Optional delivery instructions",
+        "items": [
+            {
+                "id": 1,
+                "menu_item_id": 1,
+                "quantity": 2,
+                "price_at_time": 9.99,
+                "special_instructions": "Extra spicy"
+            }
+        ],
+        "created_at": "2024-03-14T12:00:00Z",
+        "updated_at": "2024-03-14T12:00:00Z"
+    }
+]
+```
+
+### Get Single Order
+```http
+GET /orders/{order_id}
+```
+
+**Headers:**
+- Authorization: Bearer token required
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "customer_id": "1",
+    "restaurant_id": 1,
+    "status": "pending",
+    "total_amount": 25.98,
+    "delivery_address": "123 Main St",
+    "special_instructions": "Optional delivery instructions",
+    "items": [
+        {
+            "id": 1,
+            "menu_item_id": 1,
+            "quantity": 2,
+            "price_at_time": 9.99,
+            "special_instructions": "Extra spicy"
+        }
+    ],
+    "created_at": "2024-03-14T12:00:00Z",
+    "updated_at": "2024-03-14T12:00:00Z"
+}
+```
+
+### Update Order Status
+```http
+PUT /orders/{order_id}
+```
+
+**Headers:**
+- Authorization: Bearer token required
+- Content-Type: application/json; charset=utf-8
+
+**Request Body:**
+```json
+{
+    "status": "confirmed"
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "customer_id": "1",
+    "restaurant_id": 1,
+    "status": "confirmed",
+    "total_amount": 25.98,
+    "delivery_address": "123 Main St",
+    "special_instructions": "Optional delivery instructions",
+    "items": [
+        {
+            "id": 1,
+            "menu_item_id": 1,
+            "quantity": 2,
+            "price_at_time": 9.99,
+            "special_instructions": "Extra spicy"
+        }
+    ],
+    "created_at": "2024-03-14T12:00:00Z",
+    "updated_at": "2024-03-14T12:00:00Z"
+}
+```
+
+## Example Usage
+
+### Create an Order
+```bash
+curl -X POST http://localhost:5003/api/orders \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "restaurant_id": 1,
+    "delivery_address": "123 Main St",
+    "special_instructions": "Please deliver to the back door",
+    "items": [
+      {
+        "menu_item_id": 1,
+        "quantity": 2,
+        "special_instructions": "Extra spicy"
+      },
+      {
+        "menu_item_id": 2,
+        "quantity": 1
+      }
+    ]
+  }'
+```
+
+### Get All Orders
+```bash
+curl -X GET http://localhost:5003/api/orders \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Get Single Order
+```bash
+curl -X GET http://localhost:5003/api/orders/1 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Update Order Status
+```bash
+curl -X PUT http://localhost:5003/api/orders/1 \
+  -H "Content-Type: application/json; charset=utf-8" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "status": "confirmed"
+  }'
+```
+
+## Service Integration
+The services communicate with each other:
+- User Service: Handles authentication and user management
+- Restaurant Service: Manages restaurants and menu items
+- Order Service: Processes orders and integrates with both User and Restaurant services 

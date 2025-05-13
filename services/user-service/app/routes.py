@@ -71,7 +71,9 @@ def login():
 @jwt_required()
 def get_profile():
     user_id = int(get_jwt_identity())
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
     return jsonify(user.to_dict())
 
 @user_bp.route('/profile', methods=['PUT'])

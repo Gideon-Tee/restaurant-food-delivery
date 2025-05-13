@@ -8,7 +8,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from app import create_app, db
 from app.models import User, Role
 
-@pytest.fixture
+@pytest.fixture(scope='session')
 def app():
     test_config = {
         'TESTING': True,
@@ -21,11 +21,12 @@ def app():
     
     with app.app_context():
         db.create_all()
-        # Create roles
+        # Create roles only if they don't exist
         roles = ['customer', 'restaurant_owner', 'driver']
         for role_name in roles:
-            role = Role(name=role_name)
-            db.session.add(role)
+            if not Role.query.filter_by(name=role_name).first():
+                role = Role(name=role_name)
+                db.session.add(role)
         db.session.commit()
         
         yield app

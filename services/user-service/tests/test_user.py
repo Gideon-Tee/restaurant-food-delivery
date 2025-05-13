@@ -5,11 +5,19 @@ import os
 # Add the parent directory to Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app import create_app, db
-from app.models import User, Role
+from app import db
+from app.models import User
+
+@pytest.fixture(autouse=True)
+def cleanup_database():
+    # This runs before each test
+    yield
+    # This runs after each test
+    User.query.delete()
+    db.session.commit()
 
 def test_register_user(client):
-    response = client.post('/register', json={
+    response = client.post('/api/users/register', json={
         'email': 'test@example.com',
         'password': 'password123',
         'first_name': 'Test',
@@ -27,7 +35,7 @@ def test_register_user(client):
 
 def test_login_user(client):
     # First register a user
-    client.post('/register', json={
+    client.post('/api/users/register', json={
         'email': 'test@example.com',
         'password': 'password123',
         'first_name': 'Test',
@@ -37,7 +45,7 @@ def test_login_user(client):
     })
     
     # Then try to login
-    response = client.post('/login', json={
+    response = client.post('/api/users/login', json={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -49,7 +57,7 @@ def test_login_user(client):
 
 def test_get_profile(client):
     # First register and login
-    client.post('/register', json={
+    client.post('/api/users/register', json={
         'email': 'test@example.com',
         'password': 'password123',
         'first_name': 'Test',
@@ -58,7 +66,7 @@ def test_get_profile(client):
         'role': 'customer'
     })
     
-    login_response = client.post('/login', json={
+    login_response = client.post('/api/users/login', json={
         'email': 'test@example.com',
         'password': 'password123'
     })
@@ -66,13 +74,9 @@ def test_get_profile(client):
     access_token = login_response.get_json()['access_token']
     
     # Get profile with token
-    response = client.get('/profile', headers={
+    response = client.get('/api/users/profile', headers={
         'Authorization': f'Bearer {access_token}'
     })
-    
-    # Print response data for debugging
-    print("\nResponse Status:", response.status_code)
-    print("Response Data:", response.get_json())
     
     assert response.status_code == 200
     data = response.get_json()
