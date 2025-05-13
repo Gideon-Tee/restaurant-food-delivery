@@ -60,7 +60,6 @@ POST /users/login
         "email": "string"
     }
 }
-```
 
 ### Get User Profile
 ```http
