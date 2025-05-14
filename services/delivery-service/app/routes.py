@@ -118,10 +118,7 @@ def create_delivery_task():
             delivery_longitude=order['delivery_longitude']
         )
         
-        db.session.add(task)
-        db.session.commit()
-        
-        # Find nearest available agent
+        # Find nearest available agent before saving the task
         available_agents = DeliveryAgent.query.filter_by(is_available=True).all()
         nearest_agent = None
         min_distance = float('inf')
@@ -136,9 +133,12 @@ def create_delivery_task():
             task.agent_id = nearest_agent.id
             task.status = 'assigned'
             nearest_agent.is_available = False
-            db.session.commit()
-            
-            # Notify about the assignment
+        
+        db.session.add(task)
+        db.session.commit()
+        
+        # Notify about the assignment if an agent was found
+        if nearest_agent:
             notify_status_update(task)
         
         logger.info(f"New delivery task created: {task.id}")
@@ -188,7 +188,9 @@ def update_task_status():
 @jwt_required()
 def get_task(task_id):
     try:
-        task = DeliveryTask.query.get_or_404(task_id)
+        task = DeliveryTask.query.get(task_id)
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
         return jsonify(task.to_dict())
     except Exception as e:
         logger.error(f"Error getting task: {str(e)}")
