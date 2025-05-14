@@ -51,8 +51,16 @@ def test_update_agent_location_missing_coordinates(client, auth_headers, sample_
     assert response.status_code == 400
     assert response.get_json()['error'] == 'Latitude and longitude are required'
 
-def test_create_delivery_task(client, auth_headers, mock_order_response, mock_sns_publish, sample_agent):
+def test_create_delivery_task(client, auth_headers, mock_order_response, mock_sns_publish, sample_agent, session):
     """Test creating a new delivery task."""
+    # Ensure agent is available and has location set
+    sample_agent.is_available = True
+    sample_agent.current_latitude = 40.7128  # Same as restaurant location
+    sample_agent.current_longitude = -74.0060
+    session.add(sample_agent)  # Ensure the agent is in the session
+    session.commit()
+    session.refresh(sample_agent)  # Refresh the agent to ensure changes are visible
+
     response = client.post('/api/delivery/tasks',
         json={'order_id': 1},
         headers=auth_headers

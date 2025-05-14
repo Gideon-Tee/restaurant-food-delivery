@@ -115,7 +115,8 @@ def create_delivery_task():
             pickup_latitude=order['restaurant_latitude'],
             pickup_longitude=order['restaurant_longitude'],
             delivery_latitude=order['delivery_latitude'],
-            delivery_longitude=order['delivery_longitude']
+            delivery_longitude=order['delivery_longitude'],
+            status='pending'  # Set initial status
         )
         
         # Find nearest available agent before saving the task
@@ -125,13 +126,13 @@ def create_delivery_task():
         
         for agent in available_agents:
             distance = agent.calculate_distance_to(task.pickup_latitude, task.pickup_longitude)
-            if distance and distance < min_distance:
+            if distance is not None and distance < min_distance:  # Changed condition to handle zero distance
                 min_distance = distance
                 nearest_agent = agent
         
         if nearest_agent:
             task.agent_id = nearest_agent.id
-            task.status = 'assigned'
+            task.status = 'assigned'  # Update status when agent is assigned
             nearest_agent.is_available = False
         
         db.session.add(task)
@@ -151,13 +152,16 @@ def create_delivery_task():
 
 @delivery_bp.route('/tasks/<int:task_id>/status', methods=['PUT'])
 @jwt_required()
-def update_task_status():
+def update_task_status(task_id):
     try:
         data = request.get_json()
         if not data or 'status' not in data:
             return jsonify({'error': 'Status is required'}), 400
             
-        task = DeliveryTask.query.get_or_404(task_id)
+        task = db.session.get(DeliveryTask, task_id)
+        if not task:
+            return jsonify({'error': 'Task not found'}), 404
+            
         agent = DeliveryAgent.query.filter_by(user_id=str(get_jwt_identity())).first()
         
         if not agent or task.agent_id != agent.id:
@@ -188,7 +192,7 @@ def update_task_status():
 @jwt_required()
 def get_task(task_id):
     try:
-        task = DeliveryTask.query.get(task_id)
+        task = db.session.get(DeliveryTask, task_id)
         if not task:
             return jsonify({'error': 'Task not found'}), 404
         return jsonify(task.to_dict())

@@ -132,7 +132,7 @@ def mock_sns_publish(monkeypatch):
 def sample_agent(session):
     """Create a sample delivery agent with a unique user ID."""
     agent = DeliveryAgent(
-        user_id=str(uuid.uuid4()),
+        user_id='1',  # Match the user_id in the JWT token
         vehicle_type='motorcycle',
         current_latitude=40.7128,
         current_longitude=-74.0060,
