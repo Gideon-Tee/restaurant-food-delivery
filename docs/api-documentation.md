@@ -4,6 +4,7 @@
 - User Service: `http://localhost:5001/api`
 - Restaurant Service: `http://localhost:5002/api`
 - Order Service: `http://localhost:5003/api`
+- Delivery Service: `http://localhost:5004/api`
 
 ## Authentication
 All protected endpoints require a JWT token in the Authorization header:
@@ -61,7 +62,7 @@ POST /users/login
     }
 }
 
-### Get User Profile
+## Get User Profile
 ```http
 GET /users/profile
 ```
@@ -588,3 +589,232 @@ The services communicate with each other:
 - User Service: Handles authentication and user management
 - Restaurant Service: Manages restaurants and menu items
 - Order Service: Processes orders and integrates with both User and Restaurant services 
+
+## Delivery Service API
+
+### Register Delivery Agent
+Register a new delivery agent in the system.
+
+```http
+POST /delivery/agents
+```
+
+**Headers:**
+- Authorization: Bearer token required (Role: driver)
+- Content-Type: application/json
+
+**Request Body:**
+```json
+{
+    "vehicle_type": "motorcycle"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+    "id": 1,
+    "user_id": "1",
+    "vehicle_type": "motorcycle",
+    "current_latitude": null,
+    "current_longitude": null,
+    "is_available": true,
+    "last_location_update": null,
+    "created_at": "2024-05-14T13:00:00.000Z",
+    "updated_at": "2024-05-14T13:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- 400 Bad Request: Vehicle type is missing
+- 403 Forbidden: User is not authorized as a driver
+- 500 Internal Server Error: Registration failed
+
+### Update Agent Location
+Update the current location of a delivery agent.
+
+```http
+PUT /delivery/agents/location
+```
+
+**Headers:**
+- Authorization: Bearer token required
+- Content-Type: application/json
+
+**Request Body:**
+```json
+{
+    "latitude": 40.7128,
+    "longitude": -74.0060
+}
+```
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "user_id": "1",
+    "vehicle_type": "motorcycle",
+    "current_latitude": 40.7128,
+    "current_longitude": -74.0060,
+    "is_available": true,
+    "last_location_update": "2024-05-14T13:00:00.000Z",
+    "created_at": "2024-05-14T13:00:00.000Z",
+    "updated_at": "2024-05-14T13:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- 400 Bad Request: Latitude or longitude is missing
+- 404 Not Found: Agent not found
+- 500 Internal Server Error: Update failed
+
+### Create Delivery Task
+Create a new delivery task and assign it to the nearest available agent.
+
+```http
+POST /delivery/tasks
+```
+
+**Headers:**
+- Authorization: Bearer token required
+- Content-Type: application/json
+
+**Request Body:**
+```json
+{
+    "order_id": 1
+}
+```
+
+**Response (201 Created):**
+```json
+{
+    "id": 1,
+    "order_id": 1,
+    "agent_id": 1,
+    "pickup_latitude": 40.7128,
+    "pickup_longitude": -74.0060,
+    "delivery_latitude": 40.7589,
+    "delivery_longitude": -73.9851,
+    "status": "assigned",
+    "pickup_time": null,
+    "delivery_time": null,
+    "created_at": "2024-05-14T13:00:00.000Z",
+    "updated_at": "2024-05-14T13:00:00.000Z"
+}
+```
+
+**Notes:**
+- Task status will be "assigned" if an agent is found, otherwise "pending"
+- The nearest available agent is automatically assigned based on distance to pickup location
+- SNS notification is sent when task is assigned
+
+**Error Responses:**
+- 400 Bad Request: Order ID is missing
+- 404 Not Found: Order not found
+- 500 Internal Server Error: Task creation failed
+
+### Update Task Status
+Update the status of a delivery task.
+
+```http
+PUT /delivery/tasks/{task_id}/status
+```
+
+**Headers:**
+- Authorization: Bearer token required (Must be the assigned agent)
+- Content-Type: application/json
+
+**Request Body:**
+```json
+{
+    "status": "picked_up"
+}
+```
+
+**Valid Status Values:**
+- picked_up: Task has been picked up from restaurant
+- delivered: Task has been delivered to customer
+- cancelled: Task has been cancelled
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "order_id": 1,
+    "agent_id": 1,
+    "pickup_latitude": 40.7128,
+    "pickup_longitude": -74.0060,
+    "delivery_latitude": 40.7589,
+    "delivery_longitude": -73.9851,
+    "status": "picked_up",
+    "pickup_time": "2024-05-14T13:00:00.000Z",
+    "delivery_time": null,
+    "created_at": "2024-05-14T13:00:00.000Z",
+    "updated_at": "2024-05-14T13:00:00.000Z"
+}
+```
+
+**Notes:**
+- Only the assigned agent can update the task status
+- pickup_time is set automatically when status changes to "picked_up"
+- delivery_time is set automatically when status changes to "delivered"
+- Agent becomes available again when task is "delivered"
+- SNS notification is sent on status updates
+
+**Error Responses:**
+- 400 Bad Request: Status is missing or invalid
+- 403 Forbidden: Not authorized to update this task
+- 404 Not Found: Task not found
+- 500 Internal Server Error: Update failed
+
+### Get Task Details
+Get details of a specific delivery task.
+
+```http
+GET /delivery/tasks/{task_id}
+```
+
+**Headers:**
+- Authorization: Bearer token required
+
+**Response (200 OK):**
+```json
+{
+    "id": 1,
+    "order_id": 1,
+    "agent_id": 1,
+    "pickup_latitude": 40.7128,
+    "pickup_longitude": -74.0060,
+    "delivery_latitude": 40.7589,
+    "delivery_longitude": -73.9851,
+    "status": "assigned",
+    "pickup_time": null,
+    "delivery_time": null,
+    "created_at": "2024-05-14T13:00:00.000Z",
+    "updated_at": "2024-05-14T13:00:00.000Z"
+}
+```
+
+**Error Responses:**
+- 404 Not Found: Task not found
+- 500 Internal Server Error: Retrieval failed
+
+### Integration Points
+
+#### Order Service Integration
+- Fetches order details when creating delivery tasks
+- Uses order service URL from configuration
+- Forwards authentication token for authorization
+
+#### AWS SNS Integration
+- Publishes delivery status updates to configured SNS topic
+- Message format:
+```json
+{
+    "order_id": 1,
+    "delivery_status": "picked_up",
+    "timestamp": "2024-05-14T13:00:00.000Z"
+}
+``` 
