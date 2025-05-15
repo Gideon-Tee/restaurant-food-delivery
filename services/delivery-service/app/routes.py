@@ -50,7 +50,7 @@ def notify_status_update(delivery_task):
 def register_agent():
     try:
         claims = get_jwt()
-        if claims.get('role') != 'driver':
+        if claims.get('role') != 'delivery_person':
             return jsonify({'error': 'Unauthorized'}), 403
             
         data = request.get_json()
@@ -108,6 +108,27 @@ def create_delivery_task():
         order = get_order_details(data['order_id'])
         if not order:
             return jsonify({'error': 'Order not found'}), 404
+
+        # Check for required coordinate fields from order details
+        # All these are nullable=False in DeliveryTask model
+        required_coordinate_fields = [
+            'restaurant_latitude', 
+            'restaurant_longitude', 
+            'delivery_latitude', 
+            'delivery_longitude'
+        ]
+        missing_or_null_fields = []
+        for field in required_coordinate_fields:
+            if order.get(field) is None: # Check if key exists and value is not None
+                missing_or_null_fields.append(field)
+        
+        if missing_or_null_fields:
+            error_message = f"Missing or null required coordinate fields from order details for order_id {data['order_id']}: {missing_or_null_fields}"
+            logger.error(error_message)
+            return jsonify({
+                'error': 'Missing or null required coordinate fields in order details provided by order-service.',
+                'missing_fields': missing_or_null_fields
+            }), 400
             
         # Create delivery task
         task = DeliveryTask(

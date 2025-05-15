@@ -118,6 +118,8 @@ def create_restaurant():
             owner_id=user_id,
             cuisine_type=data.get('cuisine_type'),
             opening_hours=data.get('opening_hours'),
+            latitude=data.get('latitude'),
+            longitude=data.get('longitude'),
             is_active=data.get('is_active', True)
         )
         
@@ -151,7 +153,9 @@ def update_restaurant(restaurant_id):
         # Update fields
         for field, value in data.items():
             if value is not None:  # Only update if value is provided
-                setattr(restaurant, field, value)
+                # Ensure we only try to set attributes that exist on the model
+                if hasattr(restaurant, field):
+                    setattr(restaurant, field, value)
         
         db.session.commit()
         

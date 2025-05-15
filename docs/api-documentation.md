@@ -61,8 +61,9 @@ POST /users/login
         "email": "string"
     }
 }
+```
 
-## Get User Profile
+### Get User Profile
 ```http
 GET /users/profile
 ```
@@ -101,6 +102,8 @@ POST /restaurants
     "email": "string",
     "cuisine_type": "string",
     "opening_hours": "string (JSON)",
+    "latitude": "float (optional)",
+    "longitude": "float (optional)",
     "is_active": "boolean"
 }
 ```
@@ -114,10 +117,12 @@ POST /restaurants
     "address": "string",
     "phone_number": "string",
     "email": "string",
+    "owner_id": "integer",
     "cuisine_type": "string",
     "opening_hours": "string (JSON)",
+    "latitude": "float | null",
+    "longitude": "float | null",
     "is_active": "boolean",
-    "owner_id": "integer",
     "created_at": "datetime"
 }
 ```
@@ -143,6 +148,8 @@ GET /restaurants
         "email": "string",
         "cuisine_type": "string",
         "opening_hours": "string (JSON)",
+        "latitude": "float | null",
+        "longitude": "float | null",
         "is_active": "boolean",
         "owner_id": "integer",
         "created_at": "datetime"
@@ -166,6 +173,8 @@ GET /restaurants/{restaurant_id}
     "email": "string",
     "cuisine_type": "string",
     "opening_hours": "string (JSON)",
+    "latitude": "float | null",
+    "longitude": "float | null",
     "is_active": "boolean",
     "owner_id": "integer",
     "created_at": "datetime"
@@ -191,6 +200,8 @@ PUT /restaurants/{restaurant_id}
     "email": "string (optional)",
     "cuisine_type": "string (optional)",
     "opening_hours": "string (JSON) (optional)",
+    "latitude": "float (optional)",
+    "longitude": "float (optional)",
     "is_active": "boolean (optional)"
 }
 ```
@@ -206,6 +217,8 @@ PUT /restaurants/{restaurant_id}
     "email": "string",
     "cuisine_type": "string",
     "opening_hours": "string (JSON)",
+    "latitude": "float | null",
+    "longitude": "float | null",
     "is_active": "boolean",
     "owner_id": "integer",
     "created_at": "datetime"
@@ -347,6 +360,8 @@ curl -X POST http://localhost:5002/api/restaurants \
     "email": "restaurant@example.com",
     "cuisine_type": "Italian",
     "opening_hours": "{\"monday\": \"09:00-22:00\"}",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
     "is_active": true
   }'
 ```
@@ -369,28 +384,26 @@ curl -X POST http://localhost:5002/api/restaurants/1/menu \
 
 ### Create Order
 ```http
-POST /orders
+POST /api/orders
 ```
 
 **Headers:**
 - Authorization: Bearer token required
-- Content-Type: application/json; charset=utf-8
+- Content-Type: application/json
 
 **Request Body:**
 ```json
 {
-    "restaurant_id": 1,
-    "delivery_address": "123 Main St",
-    "special_instructions": "Optional delivery instructions",
+    "restaurant_id": "integer",
+    "delivery_address": "string",
+    "delivery_latitude": "float (optional)",
+    "delivery_longitude": "float (optional)",
+    "special_instructions": "string (optional)",
     "items": [
         {
-            "menu_item_id": 1,
-            "quantity": 2,
-            "special_instructions": "Extra spicy"
-        },
-        {
-            "menu_item_id": 2,
-            "quantity": 1
+            "menu_item_id": "integer",
+            "quantity": "integer",
+            "special_instructions": "string (optional)"
         }
     ]
 }
@@ -399,31 +412,27 @@ POST /orders
 **Response (201 Created):**
 ```json
 {
-    "id": 1,
-    "customer_id": "1",
-    "restaurant_id": 1,
-    "status": "pending",
-    "total_amount": 25.98,
-    "delivery_address": "123 Main St",
-    "special_instructions": "Optional delivery instructions",
+    "id": "integer",
+    "customer_id": "string",
+    "restaurant_id": "integer",
+    "status": "string",
+    "total_amount": "float",
+    "delivery_address": "string",
+    "delivery_latitude": "float | null",
+    "delivery_longitude": "float | null",
+    "special_instructions": "string | null",
     "items": [
         {
-            "id": 1,
-            "menu_item_id": 1,
-            "quantity": 2,
-            "price_at_time": 9.99,
-            "special_instructions": "Extra spicy"
-        },
-        {
-            "id": 2,
-            "menu_item_id": 2,
-            "quantity": 1,
-            "price_at_time": 6.00,
-            "special_instructions": null
+            "id": "integer",
+            "order_id": "integer",
+            "menu_item_id": "integer",
+            "quantity": "integer",
+            "price_at_time": "float",
+            "special_instructions": "string | null"
         }
     ],
-    "created_at": "2024-03-14T12:00:00Z",
-    "updated_at": "2024-03-14T12:00:00Z"
+    "created_at": "datetime",
+    "updated_at": "datetime"
 }
 ```
 
@@ -546,7 +555,9 @@ curl -X POST http://localhost:5003/api/orders \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -d '{
     "restaurant_id": 1,
-    "delivery_address": "123 Main St",
+    "delivery_address": "123 Main St, Anytown, USA",
+    "delivery_latitude": 34.0522,
+    "delivery_longitude": -118.2437,
     "special_instructions": "Please deliver to the back door",
     "items": [
       {
@@ -683,37 +694,40 @@ POST /delivery/tasks
 **Request Body:**
 ```json
 {
-    "order_id": 1
+    "order_id": "integer"
 }
 ```
 
 **Response (201 Created):**
 ```json
 {
-    "id": 1,
-    "order_id": 1,
-    "agent_id": 1,
-    "pickup_latitude": 40.7128,
-    "pickup_longitude": -74.0060,
-    "delivery_latitude": 40.7589,
-    "delivery_longitude": -73.9851,
-    "status": "assigned",
-    "pickup_time": null,
-    "delivery_time": null,
-    "created_at": "2024-05-14T13:00:00.000Z",
-    "updated_at": "2024-05-14T13:00:00.000Z"
+    "id": "integer",
+    "order_id": "integer",
+    "agent_id": "integer | null",
+    "pickup_latitude": "float",
+    "pickup_longitude": "float",
+    "delivery_latitude": "float",
+    "delivery_longitude": "float",
+    "status": "string",
+    "pickup_time": "datetime | null",
+    "delivery_time": "datetime | null",
+    "created_at": "datetime",
+    "updated_at": "datetime"
 }
 ```
 
-**Notes:**
-- Task status will be "assigned" if an agent is found, otherwise "pending"
-- The nearest available agent is automatically assigned based on distance to pickup location
-- SNS notification is sent when task is assigned
-
 **Error Responses:**
-- 400 Bad Request: Order ID is missing
-- 404 Not Found: Order not found
-- 500 Internal Server Error: Task creation failed
+- 400 Bad Request: Order ID is missing in the request.
+- 400 Bad Request: If the order details fetched from Order Service are missing required coordinates (`restaurant_latitude`, `restaurant_longitude`, `delivery_latitude`, `delivery_longitude`) or if these fields are null.
+  ```json
+  {
+      "error": "Missing or null required coordinate fields in order details provided by order-service.",
+      "missing_fields": ["delivery_latitude", "delivery_longitude"]
+  }
+  ```
+- 401 Unauthorized: JWT token is missing or invalid.
+- 404 Not Found: Order ID specified in the request does not exist in the Order Service.
+- 500 Internal Server Error: Task creation failed.
 
 ### Update Task Status
 Update the status of a delivery task.
