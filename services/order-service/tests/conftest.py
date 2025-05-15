@@ -92,7 +92,10 @@ def mock_restaurant_service(app, monkeypatch):
         return {
             'id': 1,
             'name': 'Test Restaurant',
-            'owner_id': 2
+            'address': '123 Restaurant St',
+            'latitude': 40.7128,
+            'longitude': -74.0060,
+            'owner_id': 1
         }
     
     def mock_get_menu_item(*args, **kwargs):
@@ -103,5 +106,6 @@ def mock_restaurant_service(app, monkeypatch):
         }
         return menu_items.get(args[0], {'id': args[0], 'name': 'Unknown Item', 'price': 0.00})
     
+    monkeypatch.setattr('app.models.requests.get', mock_get_restaurant)
     monkeypatch.setattr('app.routes.get_restaurant_details', mock_get_restaurant)
     monkeypatch.setattr('app.routes.get_menu_item_details', mock_get_menu_item) 

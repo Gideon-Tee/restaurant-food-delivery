@@ -20,6 +20,8 @@ class OrderSchema(Schema):
     restaurant_id = fields.Int(required=True)
     items = fields.List(fields.Nested(OrderItemSchema), required=True)
     delivery_address = fields.Str(required=True)
+    delivery_latitude = fields.Float(allow_none=True)
+    delivery_longitude = fields.Float(allow_none=True)
     special_instructions = fields.Str(allow_none=True)
 
 class OrderUpdateSchema(Schema):
@@ -133,6 +135,8 @@ def create_order():
             customer_id=user_id,
             restaurant_id=data['restaurant_id'],
             delivery_address=data['delivery_address'],
+            delivery_latitude=data.get('delivery_latitude'),
+            delivery_longitude=data.get('delivery_longitude'),
             special_instructions=data.get('special_instructions'),
             status='pending',
             total_amount=0.0  # This will be calculated later
