@@ -24,7 +24,8 @@ POST /users/register
 {
     "username": "string",
     "email": "string",
-    "password": "string"
+    "password": "string",
+    "role": "customer" # the valid roles are customer, restaurant_owner, delivery_person
 }
 ```
 
