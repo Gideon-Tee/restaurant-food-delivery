@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 import logging
+from flask_cors import CORS
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,7 +16,10 @@ migrate = Migrate()
 
 def create_app(test_config=None):
     app = Flask(__name__)
-    
+
+    # Enable CORS
+    CORS(app, resources={r"/*": {"origins": "*"}})
+
     # Load the instance config, if it exists, when not testing
     if test_config is None:
         app.config.from_mapping(
